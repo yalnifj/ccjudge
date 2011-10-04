@@ -1,0 +1,53 @@
+<taglib version="2.0">
+	<description>Expression Language Helper Functions</description>
+	<display-name>EL Helper</display-name>
+	<tlib-version>1.0</tlib-version>
+	<short-name>elh</short-name>
+	<uri>http://www.neumont.edu/elhelper</uri>
+
+	<function>
+		<name>listContains</name>
+		<function-class>
+			edu.neumont.ccjudge.tags.ELHelper
+		</function-class>
+		<function-signature>
+			boolean listContains( java.util.List, java.lang.Object )
+		</function-signature>
+	</function>
+	<function>
+		<name>collectionSize</name>
+		<function-class>
+			edu.neumont.ccjudge.tags.ELHelper
+		</function-class>
+		<function-signature>
+			int collectionSize( java.util.Collection )
+		</function-signature>
+	</function>
+	<function>
+		<name>now</name>
+		<function-class>
+			edu.neumont.ccjudge.tags.ELHelper
+		</function-class>
+		<function-signature>
+			java.util.Date now( )
+		</function-signature>
+	</function>
+	<function>
+		<name>compareDates</name>
+		<function-class>
+			edu.neumont.ccjudge.tags.ELHelper
+		</function-class>
+		<function-signature>
+			int compareDates( java.util.Date, java.util.Date )
+		</function-signature>
+	</function>
+	<function>
+		<name>htmlentities</name>
+		<function-class>
+			edu.neumont.ccjudge.tags.ELHelper
+		</function-class>
+		<function-signature>
+			java.lang.String htmlentities( java.lang.String )
+		</function-signature>
+	</function>
+</taglib>

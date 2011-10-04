@@ -1,0 +1,23 @@
+#Wed Feb 24 13:28:22 MST 2010
+eclipse.preferences.version=1
+encoding//src/edu/neumont/lms/Action.java=UTF-8
+encoding//src/edu/neumont/lms/Answer.java=UTF-8
+encoding//src/edu/neumont/lms/AnswerResponse.java=UTF-8
+encoding//src/edu/neumont/lms/Assignment.java=UTF-8
+encoding//src/edu/neumont/lms/Contact.java=UTF-8
+encoding//src/edu/neumont/lms/Course.java=UTF-8
+encoding//src/edu/neumont/lms/Event.java=UTF-8
+encoding//src/edu/neumont/lms/File.java=UTF-8
+encoding//src/edu/neumont/lms/FileTransfer.java=UTF-8
+encoding//src/edu/neumont/lms/Group.java=UTF-8
+encoding//src/edu/neumont/lms/Message.java=UTF-8
+encoding//src/edu/neumont/lms/NeumontWS.java=UTF-8
+encoding//src/edu/neumont/lms/NeumontWSService.java=UTF-8
+encoding//src/edu/neumont/lms/NeumontWSServiceLocator.java=UTF-8
+encoding//src/edu/neumont/lms/NeumontWSSoapBindingStub.java=UTF-8
+encoding//src/edu/neumont/lms/Question.java=UTF-8
+encoding//src/edu/neumont/lms/QuestionOptions.java=UTF-8
+encoding//src/edu/neumont/lms/Quiz.java=UTF-8
+encoding//src/edu/neumont/lms/Role.java=UTF-8
+encoding//src/edu/neumont/lms/Submission.java=UTF-8
+encoding//src/edu/neumont/lms/User.java=UTF-8

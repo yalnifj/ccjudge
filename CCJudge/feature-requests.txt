@@ -1,0 +1,21 @@
+1. Add an HTML WYSIWYG editor to the edit problem page (Mike)
+2. During contests store complete output (Ski)
+	2a. Filter the output during the contest to prevent cheating
+	2b. Allow users to see unfiltered output after the contest is over
+	2c. Allow admin users the ability to always see unfiltered content
+3. Allow admins to edit submissions (Joel)
+4. Allow problems to be judged by more than just an exact string comparator (Jason)
+	4a. case insensitive
+	4b. numeric range
+	4c. regular expressions
+	4d. unordered set (output matches some delimited set but elements do not have to be in any order)
+	4e. creating a modular plugin system would be preferred so that future modules could easily be dropped in
+5. Improve user/team management (Nick, Kevin)
+	5a. Add user management admin pages
+		5a.i. List all users
+		5a.ii. delete a users (making sure he is removed from his teams as well)
+		5a.iii. edit a user
+6. Allow users to directly submit code through a textbox instead of just uploading a file (Ryley)
+7. Check for admin users during setup process and prompt user to create it
+9. Show rankings for problems.
+10. Modular authentication schemes for users (some users auth against moodle, some against local database, etc.)

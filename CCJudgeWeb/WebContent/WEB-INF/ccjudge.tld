@@ -1,0 +1,43 @@
+<taglib version="2.0">
+	<description>Coding Contest Judging System Tags</description>
+	<display-name>CCJudge Tags</display-name>
+	<tlib-version>1.0</tlib-version>
+	<short-name>ccjudge</short-name>
+	<uri>http://www.neumont.edu/ccjudge</uri>
+
+	<tag>
+		<name>SubmissionStatus</name>
+		<tag-class>edu.neumont.ccjudge.tags.SubmissionStatusTag</tag-class>
+		<body-content>scriptless</body-content>
+		<attribute>
+			<name>team</name>
+			<type>edu.neumont.ccjudge.model.Team</type>
+			<required>true</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>problem</name>
+			<type>edu.neumont.ccjudge.model.Problem</type>
+			<required>true</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>contest</name>
+			<type>edu.neumont.ccjudge.model.Contest</type>
+			<required>true</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+	</tag>
+	
+	<tag>
+		<name>Diff</name>
+		<tag-class>edu.neumont.ccjudge.tags.Diff</tag-class>
+		<body-content>empty</body-content>
+		<attribute>
+		 	<name>submission</name>
+		 	<type>edu.neumont.ccjudge.model.Submission</type>
+		 	<required>true</required>
+		 	<rtexprvalue>true</rtexprvalue>
+		</attribute>
+	</tag>
+</taglib>

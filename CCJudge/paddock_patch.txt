@@ -1,0 +1,255 @@
+### Eclipse Workspace Patch 1.0
+#P CCJudgeEJBClient
+Index: ejbModule/edu/neumont/ccjudge/judging/JudgingModule.java
+===================================================================
+--- ejbModule/edu/neumont/ccjudge/judging/JudgingModule.java	(revision 60)
++++ ejbModule/edu/neumont/ccjudge/judging/JudgingModule.java	(working copy)
+@@ -24,6 +24,7 @@
+ 	public static final String ERROR_INCLUDE = "You have attempted to include and invalid library or namespace: ";
+ 	
+ 	public static final boolean USE_SUDO = false;
++	public static final boolean USE_CHOWN = false;
+ 	
+ 	public static final String ALLOWED_INCLUDES_PROPERTY = "allowedincludes";
+ 	
+#P CCJudgeEJB
+Index: ejbModule/edu/neumont/ccjudge/judging/JavaJudgeModule.java
+===================================================================
+--- ejbModule/edu/neumont/ccjudge/judging/JavaJudgeModule.java	(revision 60)
++++ ejbModule/edu/neumont/ccjudge/judging/JavaJudgeModule.java	(working copy)
+@@ -75,10 +75,12 @@
+ 			
+ 			//-- change ownership of files to nobody for security
+ 			commands = new ArrayList<String>();
+-			commands.add("chown");
+-			commands.add("nobody");
+-			commands.add("*");
+-			results = this.runCommand(commands, teamDirectory);
++			if (USE_CHOWN) {
++				commands.add("chown");
++				commands.add("nobody");
++				commands.add("*");
++				results = this.runCommand(commands, teamDirectory);
++			}
+ 			
+ 			//-- run the java command
+ 			String filepath = javafile.getAbsolutePath();
+#P CCJudgeWeb
+Index: src/edu/neumont/ccjudge/controllers/TeamController.java
+===================================================================
+--- src/edu/neumont/ccjudge/controllers/TeamController.java	(revision 60)
++++ src/edu/neumont/ccjudge/controllers/TeamController.java	(working copy)
+@@ -1,5 +1,6 @@
+ package edu.neumont.ccjudge.controllers;
+ 
++import java.util.ArrayList;
+ import java.util.List;
+ 
+ import javax.naming.Context;
+@@ -11,8 +12,11 @@
+ import edu.neumont.ccjudge.managers.ContestManagerLocal;
+ import edu.neumont.ccjudge.managers.TeamManagerLocal;
+ import edu.neumont.ccjudge.managers.TeamMemberManagerLocal;
++import edu.neumont.ccjudge.managers.SubmissionManagerLocal;
+ import edu.neumont.ccjudge.model.Contest;
++import edu.neumont.ccjudge.model.Submission;
+ import edu.neumont.ccjudge.model.Team;
++import edu.neumont.ccjudge.model.TeamMember;
+ import edu.neumont.ccjudge.model.TeamMemberRole;
+ 
+ public class TeamController extends BaseController {
+@@ -21,7 +25,8 @@
+ 	private TeamManagerLocal manager;
+ 	private ContestManagerLocal contestManager;
+ 	private TeamMemberManagerLocal memberManager;
+-
++	private SubmissionManagerLocal submissionManager;
++	
+ 	public TeamController() {
+ 		super();
+ 		this.defaultAction = "list";
+@@ -31,6 +36,7 @@
+ 			contestManager = (ContestManagerLocal) ctx.lookup("CCJudge/ContestManager/local");
+ 			manager = (TeamManagerLocal) ctx.lookup("CCJudge/TeamManager/local");
+ 			memberManager = (TeamMemberManagerLocal) ctx.lookup("CCJudge/TeamMemberManager/local");
++			submissionManager = (SubmissionManagerLocal) ctx.lookup("CCJudge/SubmissionManager/local");
+ 		} catch (NamingException e) {
+ 			e.printStackTrace();
+ 		}
+@@ -40,15 +46,14 @@
+ 	public String list(HttpServletRequest request) throws ValidationException {
+ 		List<Team> list = null;
+ 		Contest contest = null;
+-		HttpSession session = request.getSession();
+ 
+ 		String idstr = request.getParameter("contest");
+ 		if (idstr != null && !idstr.isEmpty()) {
+ 			int contestId = validator.validateInt(idstr);
+ 			contest = contestManager.findById(contestId);
+-			session.setAttribute("contest", contest);
++			request.setAttribute("contest", contest);
+ 		} else {
+-			contest = (Contest) session.getAttribute("contest");
++			contest = (Contest) request.getAttribute("contest");
+ 			if (contest!=null) contest = contestManager.findById(contest.getId());
+ 		}
+ 		if (contest != null) {
+@@ -78,7 +83,7 @@
+ 		}
+ 		if (team == null) {
+ 			team = new Team();
+-			Contest contest = (Contest) request.getSession().getAttribute("contest");
++			Contest contest = (Contest) request.getAttribute("contest");
+ 			if (contest != null)
+ 				team.getContests().add(contest);
+ 		}
+@@ -87,12 +92,60 @@
+ 		request.setAttribute("team", team);
+ 		return "/views/team/edit.jsp";
+ 	}
++	
++	public String delete(HttpServletRequest request) throws ValidationException {
++		// Get the team and contest parameters
++		int teamId = validator.validateInt(request.getParameter("team"));
++		int contestId = 0;
++		if(request.getParameter("contest") != null)
++			contestId = validator.validateInt(request.getParameter("contest"));
++		
++		// Set the request attributes
++		request.setAttribute("team", manager.findById(teamId));
++		request.setAttribute("contest", contestManager.findById(contestId));
++		return "/views/team/delete.jsp";
++	}
+ 
+-	public String delete(HttpServletRequest request) throws ValidationException {
++	public String deleteProcess(HttpServletRequest request) throws ValidationException {		
++		// Get the information [Option 1: Remove team from contest, 2: Remove team only, 3: Remove team and team members]
+ 		int id = validator.validateInt(request.getParameter("id"));
++		int option = validator.validateInt(request.getParameter("option"));
++		Contest contest = contestManager.findById(validator.validateInt(request.getParameter("contest")));
+ 		Team team = manager.findById(id);
+-		if (team != null)
+-			manager.delete(team);
++		
++		if(team != null) {
++			// Remove the team's submissions or the contest's submissions
++			for(Submission submission : team.getSubmissions()) {
++				if(contest == null || submission.getContest().getId() == contest.getId())
++					submissionManager.delete(submission);
++			}
++			
++			// Remove the team from the contest or all contests
++			if(contest == null)
++				team.getContests().clear();
++			else
++				team.getContests().remove(contest);
++			
++			// Remove the team members
++			if(option == 3) {
++				TeamMemberRole[] teamRoles = team.getMembers().toArray(new TeamMemberRole[0]);
++				for(TeamMemberRole teamRole : teamRoles) {
++					TeamMemberRole[] memberRoles = teamRole.getMember().getTeams().toArray(new TeamMemberRole[0]);
++					for(TeamMemberRole memberRole : memberRoles) {
++						memberRole.getTeam().getMembers().remove(memberRole);
++						memberRole.getMember().getTeams().remove(memberRole);
++						manager.update(memberRole.getTeam());
++						memberManager.update(memberRole.getMember());
++					}
++					//memberManager.delete(teamRole.getMember());
++				}
++			}
++			
++			// Remove the team
++			manager.update(team);
++			if(option != 1)
++				manager.delete(team);
++		}
+ 		return this.list(request);
+ 	}
+ 
+Index: WebContent/views/team/list.jsp
+===================================================================
+--- WebContent/views/team/list.jsp	(revision 60)
++++ WebContent/views/team/list.jsp	(working copy)
+@@ -2,6 +2,35 @@
+ <%@ taglib prefix="cc" tagdir="/WEB-INF/tags" %>
+ <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+ <cc:CCJudge title="Team List">
++<script language="JavaScript" type="text/javascript">
++<!--
++var popupShown = "";
++$(document).ready(function() {
++	$(".deleteteam").bind("click", function() {
++		if(popupShown != "#popup" + this.id) {
++			hide();
++			show(this.id, this.href);
++		} else {
++			hide();
++		}
++		return false;
++	});
++});
++
++function show(id, href) {
++	$("#popup" + id).load(href);
++	$("#popup" + id).show('slow');
++	popupShown = "#popup" + id;
++}
++
++function hide() {
++	if(popupShown != "") {
++		$(popupShown).hide('fast');
++		popupShown = "";
++	}
++}
++//-->
++</script>
+ <h2>Team List <c:if test="${contest != null }"> for Contest ${contest.name}</c:if></h2>
+ <table border="1" cellpadding="2">
+ 	<tr><th>id</th><th>Name</th><th>Members</th><th>Contests</th><th></th></tr>
+@@ -16,7 +45,12 @@
+ 			<cc:contestList contests="${team.contests}"></cc:contestList>
+ 		</td>
+ 		<td><a href="${baseURL}/team/edit?id=${team.id}"><img src="${baseURL}/images/edit.png" border="0" alt="edit" title="edit"/></a>
+-		<a href="${baseURL}/team/delete?id=${team.id}"><img src="${baseURL}/images/delete.png" border="0" alt="delete" title="delete" onclick="return confirm('Are you sure you want to delete this team?');"/></a>
++		<a id="deleteteam${team.id}" href="${baseURL}/team/delete?team=${team.id}&contest=${contest != null ? contest.id : 0}" class="deleteteam">
++			<img src="${baseURL}/images/delete.png" border="0" alt="delete" title="delete"/>
++		</a>
++		<div id="popupdeleteteam${team.id}" class="hiddenpopup">
++			Hello popup
++		</div>
+ 		</td>
+ 		</tr>
+ 	</c:forEach>
+Index: WebContent/views/team/delete.jsp
+===================================================================
+--- WebContent/views/team/delete.jsp	(revision 0)
++++ WebContent/views/team/delete.jsp	(revision 0)
+@@ -0,0 +1,26 @@
++<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
++<%@ taglib prefix="cc" tagdir="/WEB-INF/tags" %>
++<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
++
++<form method="post" action="${baseURL}/team/deleteProcess" style="margin:10px;">
++<input type="hidden" name="id" value="${team.id}" />
++<c:choose>
++	<c:when test="${contest != null}">
++		<input type="hidden" name="contest" value="${contest.id}" />
++		<input type="radio" name="option" id="option1" value="1" />
++		<label for="option1">Remove team from this contest</label><br />
++	</c:when>
++	<c:otherwise>
++		<input type="hidden" name="contest" value="0" />
++	</c:otherwise>
++</c:choose>
++
++<input type="radio" name="option" id="option2" value="2" />
++<label for="option2">Delete the team</label><br />
++<input type="radio" name="option" id="option3" value="3" />
++<label for="option3">Delete the team and the members</label><br /><br />
++<div style="text-align:center;">
++	<input type="submit" value="Confirm Deletion" />
++	<input type="button" value="Cancel" onclick="hide()" />
++</div>
++</form>
+\ No newline at end of file
