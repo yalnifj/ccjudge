@@ -1,0 +1,1 @@
+This coding contest judging system is built on JavaEE 5 with EJB3.  It allows for hosting multiple contests and problems and managing submissions and judging.  It supports automatic judging of problems in C#, Java, and C++.
